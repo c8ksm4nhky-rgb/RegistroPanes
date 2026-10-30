@@ -1,0 +1,635 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Compras de Panes</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f1f5f9;
+            margin: 0;
+            padding: 20px;
+            color: #1e293b;
+        }
+
+        .contenedor {
+            max-width: 1000px;
+            margin: 30px auto;
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+
+        h1, h2 {
+            text-align: center;
+        }
+
+        h1 {
+            color: #1e3a8a;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 11px;
+            margin-top: 6px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 20px;
+            border: none;
+            border-radius: 6px;
+            background: #2563eb;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .btn-eliminar {
+            width: auto;
+            margin: 0;
+            padding: 8px 12px;
+            background: #dc2626;
+            font-size: 14px;
+        }
+
+        .btn-salir {
+            background: #475569;
+        }
+
+        .calculadora {
+            background: #eff6ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .calculadora p {
+            margin: 8px 0;
+            font-size: 17px;
+        }
+
+        .tabla-contenedor {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 750px;
+        }
+
+        th, td {
+            border: 1px solid #cbd5e1;
+            padding: 10px;
+            text-align: center;
+        }
+
+        th {
+            background: #1e3a8a;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background: #f8fafc;
+        }
+
+        #sistema {
+            display: none;
+        }
+
+        .mensaje {
+            text-align: center;
+            margin-top: 12px;
+            font-weight: bold;
+        }
+
+        .resumen {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .resumen div {
+            flex: 1;
+            min-width: 150px;
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+
+            .contenedor {
+                padding: 15px;
+                margin: 10px auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="contenedor">
+
+    <!-- INICIO DE SESIÓN -->
+    <section id="inicioSesion">
+        <h1>Registro de Compras de Panes</h1>
+        <h2>Iniciar sesión</h2>
+
+        <form id="formularioLogin">
+            <label for="correo">Correo electrónico:</label>
+            <input type="email" id="correo" required>
+
+            <label for="contrasena">Contraseña:</label>
+            <input type="password" id="contrasena" required>
+
+            <button type="submit">Ingresar</button>
+        </form>
+
+        <p id="mensajeLogin" class="mensaje"></p>
+    </section>
+
+
+    <!-- SISTEMA PRINCIPAL -->
+    <section id="sistema">
+
+        <h1>Registro de Compras de Panes</h1>
+
+        <p id="usuarioActivo" class="mensaje"></p>
+
+        <h2>Registrar compra</h2>
+
+        <form id="formularioCompra">
+
+            <label for="nombre">Nombre del comprador:</label>
+            <input
+                type="text"
+                id="nombre"
+                placeholder="Nombre del comprador"
+                required
+            >
+
+            <label for="cantidad">Cantidad de panes:</label>
+            <input
+                type="number"
+                id="cantidad"
+                min="1"
+                step="1"
+                placeholder="Cantidad de panes"
+                required
+            >
+
+            <label for="dinero">Dinero recibido ($):</label>
+            <input
+                type="number"
+                id="dinero"
+                min="0"
+                step="0.01"
+                placeholder="Dinero recibido"
+                required
+            >
+
+            <label for="seccion">Sección:</label>
+            <select id="seccion" required>
+                <option value="">Selecciona una sección</option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+            </select>
+
+            <div class="calculadora">
+                <p>Precio por pan: <strong>$1.50</strong></p>
+                <p>Total a pagar: <strong id="total">$0.00</strong></p>
+                <p>Vuelto: <strong id="vuelto">$0.00</strong></p>
+            </div>
+
+            <button type="submit">Registrar compra</button>
+
+        </form>
+
+        <p id="mensajeCompra" class="mensaje"></p>
+
+        <hr>
+
+        <h2>Historial de compras</h2>
+
+        <div class="resumen">
+            <div>
+                <strong>Total de compras</strong>
+                <p id="cantidadCompras">0</p>
+            </div>
+
+            <div>
+                <strong>Total de panes</strong>
+                <p id="totalPanes">0</p>
+            </div>
+
+            <div>
+                <strong>Dinero recibido</strong>
+                <p id="dineroTotal">$0.00</p>
+            </div>
+        </div>
+
+        <div class="tabla-contenedor">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Comprador</th>
+                        <th>Cantidad</th>
+                        <th>Dinero recibido</th>
+                        <th>Total</th>
+                        <th>Vuelto</th>
+                        <th>Sección</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+
+                <tbody id="listaCompras">
+                </tbody>
+            </table>
+        </div>
+
+        <button type="button" class="btn-salir" id="botonSalir">
+            Cerrar sesión
+        </button>
+
+    </section>
+
+</div>
+
+
+<script>
+
+// =====================================
+// CONFIGURACIÓN DE SUPABASE
+// =====================================
+
+const URL_SUPABASE = "https://aptbgtlbjwpeubyvvfcv.supabase.co";
+const CLAVE_PUBLICA = "sb_publishable_4zumSASHWBEMt7LIlhA1xw_1xZ3Bz0r";
+
+const cliente = window.supabase.createClient(
+    URL_SUPABASE,
+    CLAVE_PUBLICA
+);
+
+
+// =====================================
+// ELEMENTOS HTML
+// =====================================
+
+const inicioSesion = document.getElementById("inicioSesion");
+const sistema = document.getElementById("sistema");
+
+const formularioLogin = document.getElementById("formularioLogin");
+const formularioCompra = document.getElementById("formularioCompra");
+
+const mensajeLogin = document.getElementById("mensajeLogin");
+const mensajeCompra = document.getElementById("mensajeCompra");
+
+const nombre = document.getElementById("nombre");
+const cantidad = document.getElementById("cantidad");
+const dinero = document.getElementById("dinero");
+const seccion = document.getElementById("seccion");
+
+const totalTexto = document.getElementById("total");
+const vueltoTexto = document.getElementById("vuelto");
+
+const lista = document.getElementById("listaCompras");
+
+const PRECIO_PAN = 1.50;
+
+
+// =====================================
+// INICIAR SESIÓN
+// =====================================
+
+formularioLogin.addEventListener("submit", async function(event) {
+
+    event.preventDefault();
+
+    mensajeLogin.textContent = "Verificando acceso...";
+
+    const correo = document.getElementById("correo").value;
+    const contrasena = document.getElementById("contrasena").value;
+
+    const { data, error } = await cliente.auth.signInWithPassword({
+        email: correo,
+        password: contrasena
+    });
+
+    if (error) {
+        mensajeLogin.textContent = "Error: " + error.message;
+        return;
+    }
+
+    mostrarSistema(data.user);
+
+});
+
+
+// =====================================
+// MOSTRAR SISTEMA
+// =====================================
+
+function mostrarSistema(usuario) {
+
+    inicioSesion.style.display = "none";
+    sistema.style.display = "block";
+
+    document.getElementById("usuarioActivo").textContent =
+        "Sesión iniciada: " + usuario.email;
+
+    cargarCompras();
+
+}
+
+
+// =====================================
+// CALCULAR TOTAL Y VUELTO
+// =====================================
+
+function calcularCompra() {
+
+    const numeroPanes = Number(cantidad.value) || 0;
+    const dineroRecibido = Number(dinero.value) || 0;
+
+    const total = numeroPanes * PRECIO_PAN;
+    const vuelto = dineroRecibido - total;
+
+    totalTexto.textContent = "$" + total.toFixed(2);
+
+    vueltoTexto.textContent =
+        "$" + Math.max(0, vuelto).toFixed(2);
+
+}
+
+cantidad.addEventListener("input", calcularCompra);
+dinero.addEventListener("input", calcularCompra);
+
+
+// =====================================
+// REGISTRAR COMPRA
+// =====================================
+
+formularioCompra.addEventListener("submit", async function(event) {
+
+    event.preventDefault();
+
+    const nombreComprador = nombre.value.trim();
+    const numeroPanes = Number(cantidad.value);
+    const dineroRecibido = Number(dinero.value);
+
+    const total = numeroPanes * PRECIO_PAN;
+    const vuelto = dineroRecibido - total;
+
+    if (!nombreComprador || !seccion.value) {
+        mensajeCompra.textContent = "Completa todos los campos.";
+        return;
+    }
+
+    if (!Number.isInteger(numeroPanes) || numeroPanes <= 0) {
+        mensajeCompra.textContent = "Ingresa una cantidad válida de panes.";
+        return;
+    }
+
+    if (!Number.isFinite(dineroRecibido) || dineroRecibido < 0) {
+        mensajeCompra.textContent = "Ingresa una cantidad de dinero válida.";
+        return;
+    }
+
+    if (dineroRecibido < total) {
+        mensajeCompra.textContent =
+            "El dinero recibido no alcanza para pagar la compra.";
+        return;
+    }
+
+    mensajeCompra.textContent = "Guardando compra...";
+
+    const { error } = await cliente
+        .from("compras_panes")
+        .insert({
+            nombre: nombreComprador,
+            cantidad_panes: numeroPanes,
+            dinero_recibido: dineroRecibido,
+            total: total,
+            vuelto_entregado: vuelto,
+            seccion: seccion.value
+        });
+
+    if (error) {
+        mensajeCompra.textContent =
+            "Error al guardar: " + error.message;
+        return;
+    }
+
+    mensajeCompra.textContent = "¡Compra registrada correctamente!";
+
+    formularioCompra.reset();
+    calcularCompra();
+
+    await cargarCompras();
+
+});
+
+
+// =====================================
+// MOSTRAR HISTORIAL DE COMPRAS
+// =====================================
+
+async function cargarCompras() {
+
+    lista.innerHTML = "<tr><td colspan='7'>Cargando registros...</td></tr>";
+
+    const { data, error } = await cliente
+        .from("compras_panes")
+        .select("*")
+        .order("creado_en", { ascending: false });
+
+    if (error) {
+        lista.innerHTML =
+            "<tr><td colspan='7'>Error al cargar registros: " +
+            error.message +
+            "</td></tr>";
+        return;
+    }
+
+    lista.innerHTML = "";
+
+    let sumaPanes = 0;
+    let sumaDinero = 0;
+
+    data.forEach(function(compra) {
+
+        sumaPanes += Number(compra.cantidad_panes);
+        sumaDinero += Number(compra.dinero_recibido);
+
+        const fila = document.createElement("tr");
+
+        const valores = [
+            compra.nombre,
+            compra.cantidad_panes,
+            "$" + Number(compra.dinero_recibido).toFixed(2),
+            "$" + Number(compra.total).toFixed(2),
+            "$" + Number(compra.vuelto_entregado).toFixed(2),
+            compra.seccion
+        ];
+
+        valores.forEach(function(valor) {
+
+            const celda = document.createElement("td");
+            celda.textContent = valor;
+
+            fila.appendChild(celda);
+
+        });
+
+        // BOTÓN ELIMINAR
+
+        const celdaAcciones = document.createElement("td");
+
+        const botonEliminar = document.createElement("button");
+
+        botonEliminar.textContent = "Eliminar";
+        botonEliminar.className = "btn-eliminar";
+
+        botonEliminar.addEventListener("click", function() {
+            eliminarCompra(compra.id);
+        });
+
+        celdaAcciones.appendChild(botonEliminar);
+        fila.appendChild(celdaAcciones);
+
+        lista.appendChild(fila);
+
+    });
+
+    document.getElementById("cantidadCompras").textContent =
+        data.length;
+
+    document.getElementById("totalPanes").textContent =
+        sumaPanes;
+
+    document.getElementById("dineroTotal").textContent =
+        "$" + sumaDinero.toFixed(2);
+
+    if (data.length === 0) {
+        lista.innerHTML =
+            "<tr><td colspan='7'>Todavía no hay compras registradas.</td></tr>";
+    }
+
+}
+
+
+// =====================================
+// ELIMINAR COMPRA
+// =====================================
+
+async function eliminarCompra(id) {
+
+    const confirmar = confirm(
+        "¿Estás seguro de que deseas eliminar esta compra?"
+    );
+
+    if (!confirmar) {
+        return;
+    }
+
+    const { error } = await cliente
+        .from("compras_panes")
+        .delete()
+        .eq("id", id);
+
+    if (error) {
+
+        alert("No se pudo eliminar: " + error.message);
+        return;
+
+    }
+
+    alert("Compra eliminada correctamente.");
+
+    await cargarCompras();
+
+}
+
+
+// =====================================
+// CERRAR SESIÓN
+// =====================================
+
+document.getElementById("botonSalir").addEventListener("click", async function() {
+
+    const { error } = await cliente.auth.signOut();
+
+    if (error) {
+        alert("No se pudo cerrar sesión: " + error.message);
+        return;
+    }
+
+    sistema.style.display = "none";
+    inicioSesion.style.display = "block";
+
+    formularioLogin.reset();
+
+    mensajeLogin.textContent = "Sesión cerrada correctamente.";
+
+});
+
+
+// =====================================
+// COMPROBAR SESIÓN EXISTENTE
+// =====================================
+
+async function comprobarSesion() {
+
+    const { data, error } = await cliente.auth.getSession();
+
+    if (error) {
+        console.error(error);
+        return;
+    }
+
+    if (data.session) {
+        mostrarSistema(data.session.user);
+    }
+
+}
+
+comprobarSesion();
+
+</script>
+
+</body>
+</html>
